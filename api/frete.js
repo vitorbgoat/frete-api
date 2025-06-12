@@ -1,56 +1,69 @@
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método não permitido' });
+  if (req.method !== "POST") {
+    return res.status(405).send("Método não permitido");
   }
 
-  const { cep } = req.body;
+  const { cep, peso, largura, altura, comprimento } = req.body;
 
-  if (!cep) {
-    return res.status(400).json({ error: 'CEP de destino é obrigatório' });
-  }
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: "Bearer SEU_TOKEN_AQUI"
+  };
+
+  const body = {
+    from: {
+      postal_code: "13457-074" // CEP da sua loja
+    },
+    to: {
+      postal_code: cep
+    },
+    products: [
+      {
+        weight: parseFloat(peso),
+        width: parseFloat(largura),
+        height: parseFloat(altura),
+        length: parseFloat(comprimento),
+        quantity: 1
+      }
+    ],
+    options: {
+      insurance_value: 0,
+      receipt: false,
+      own_hand: false,
+      reverse: false,
+      non_commercial: true
+    },
+    services: [], // vazio retorna todos os disponíveis
+    validate: true
+  };
 
   try {
-    const response = await fetch('https://www.melhorenvio.com.br/api/v2/me/shipment/calculate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`
-      },
-      body: JSON.stringify([
-        {
-          from: {
-            postal_code: '13457-074'
-          },
-          to: {
-            postal_code: cep
-          },
-          package: {
-            weight: 0.1,
-            width: 16,
-            height: 11,
-            length: 7
-          },
-          services: ['1'],
-          options: {
-            receipt: false,
-            own_hand: false,
-            insurance_value: 0,
-            reverse: false,
-            non_commercial: true
-          }
-        }
-      ])
+    const response = await fetch("https://www.melhorenvio.com.br/api/v2/me/shipment/calculate", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body)
     });
 
-    const data = await response.json();
+    const fretes = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao calcular o frete');
+    if (!Array.isArray(fretes)) {
+      return res.status(400).json({ erro: "Erro ao calcular frete", detalhes: fretes });
     }
 
-    res.status(200).json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message || 'Erro interno do servidor' });
+    // Retorna HTML direto
+    const html = fretes
+      .map(frete => `
+        <div style="padding:10px;border:1px solid #ccc;margin-bottom:8px">
+          <strong>${frete.name}</strong><br>
+          Valor: R$ ${parseFloat(frete.price).toFixed(2)}<br>
+          Prazo: ${frete.delivery_time} dia(s)
+        </div>
+      `)
+      .join("");
+
+    return res.status(200).send(html);
+
+  } catch (error) {
+    return res.status(500).json({ erro: "Erro interno", detalhes: error.message });
   }
 }
