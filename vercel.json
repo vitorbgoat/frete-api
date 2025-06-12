@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/frete.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/frete", "dest": "/api/frete.js" }
+  ]
+}
