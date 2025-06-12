@@ -19,16 +19,16 @@ export default async function handler(req, res) {
       body: JSON.stringify([
         {
           from: {
-            postal_code: '01001-000'
+            postal_code: '13457-074'
           },
           to: {
             postal_code: cep
           },
           package: {
-            weight: 1,
-            width: 15,
-            height: 10,
-            length: 20
+            weight: 0.1,
+            width: 16,
+            height: 11,
+            length: 7
           },
           services: ['1'],
           options: {
